@@ -105,3 +105,4 @@ Appenders and Layouts
  Logback allows logging requests to print to multiple destinations. In logback speak, an output destination is called an appender. Currently, appenders exist for the console, files, remote socket servers, to MySQL, PostgreSQL, Oracle and other databases, JMS, and remote UNIX Syslog daemons.
  More than one appender can be attached to a logger.
  
+ https://logback.qos.ch/manual/architecture.html
