@@ -100,9 +100,33 @@ TRACE
 //logging on file
 
 
-Appenders and Layouts
+Appenders
 
  Logback allows logging requests to print to multiple destinations. In logback speak, an output destination is called an appender. Currently, appenders exist for the console, files, remote socket servers, to MySQL, PostgreSQL, Oracle and other databases, JMS, and remote UNIX Syslog daemons.
  More than one appender can be attached to a logger.
  
- https://logback.qos.ch/manual/architecture.html
+ Appenders must implement the ch.qos.logback.core.Appender interface
+ 
+ The ch.qos.logback.core.​AppenderBase class is an abstract class implementing the Appender interface. It provides basic functionality shared by all appenders, such as methods for getting or setting their name, their activation status, their layout and their filters. It is the super-class of all appenders shipped with logback. Although an abstract class, AppenderBase actually implements the doAppend() method in the Append interface
+ 
+ This implementation of the doAppend() method is synchronized. It follows that logging to the same appender from different threads is safe. While a thread, say T, is executing the doAppend() method, subsequent calls by other threads are queued until T leaves the doAppend() method, ensuring T's exclusive access to the appender.
+ 
+	ConsoleAppender
+ 
+ The ConsoleAppender, as the name indicates, appends on the console, or more precisely on System.out or System.err, the former being the default target. ConsoleAppender formats events with the help of an encoder specified by the user. Encoders will be discussed in a subsequent chapter. Both System.out and System.err are of type java.io.PrintStream. Consequently, they are wrapped inside an OutputStreamWriter which buffers I/O operations.
+ 
+Property Name	Type	Description
+encoder	- Encoder -	Describes how the output should be formatted.
+target - String	- One of the String values System.out or System.err. The default target is System.out.
+
+	FileAppender
+	
+The FileAppender, a subclass of OutputStreamAppender, appends log events into a file. The target file is specified by the File option. If the file already exists, it is either appended to, or truncated depending on the value of the append property.
+
+
+Property Name	Type	Description
+append - boolean - If true, events are appended at the end of an existing file. Otherwise, if append is false, any existing file is truncated. The append option is set to true by default.
+encoder	- Encoder - See OutputStreamAppender properties.
+file - String - The name of the file to write to. If the file does not exist, it is created. On the MS Windows platform users frequently forget to escape backslashes. For example, the value c:\temp\test.log is not likely to be interpreted properly as '\t' is an escape sequence interpreted as a single tab character (\u0009). Correct values can be specified as c:/temp/test.log or alternatively as c:\\temp\\test.log. The File option has no default value.
+If the parent directory of the file does not exist, FileAppender will automatically create it, including any necessary but nonexistent parent directories.
+
