@@ -7,19 +7,26 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-public class HelloController {
-    private static final Logger logger = LoggerFactory.getLogger(HelloController.class);
+public class HelloController extends BaseController{
+    private static Logger logger1 = LoggerFactory.getLogger(BaseController.class);
+    private static Logger logger2 = LoggerFactory.getLogger(HelloController.class);
 
     @GetMapping("/hello")
     public ResponseEntity<String> hello() {
 
         String data = "Hello from logger";
-        logger.trace("Trace Message!");
-        logger.debug("Debug Message!");
-        logger.info("Info Message!");
-        logger.warn("Warn Message!");
-        logger.error("Error Message!");
+        logger1.trace("Trace Message!");
+        logger1.debug("Debug Message!");
+        logger1.info("Info Message!");
+        logger1.warn("Warn Message!");
+        logger1.error("Error Message!");
 
-        return ResponseEntity.ok().body(data); // index.html
+        logger2.trace("Trace Message!");
+        logger2.debug("Debug Message!");
+        logger2.info("Info Message!");
+        logger2.warn("Warn Message!");
+        logger2.error("Error Message!");
+
+        return ResponseEntity.ok().body(data);
     }
 }
