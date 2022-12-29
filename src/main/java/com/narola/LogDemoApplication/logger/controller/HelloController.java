@@ -1,4 +1,4 @@
-package com.narola.LogDemoApplication.Logger.Controller;
+package com.narola.LogDemoApplication.logger.controller;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
