@@ -130,3 +130,139 @@ encoder	- Encoder - See OutputStreamAppender properties.
 file - String - The name of the file to write to. If the file does not exist, it is created. On the MS Windows platform users frequently forget to escape backslashes. For example, the value c:\temp\test.log is not likely to be interpreted properly as '\t' is an escape sequence interpreted as a single tab character (\u0009). Correct values can be specified as c:/temp/test.log or alternatively as c:\\temp\\test.log. The File option has no default value.
 If the parent directory of the file does not exist, FileAppender will automatically create it, including any necessary but nonexistent parent directories.
 
+	RollingFileAppender
+RollingFileAppender extends FileAppender with the capability to rollover log files. For example, RollingFileAppender can log to a file named log.txt file and, once a certain condition is met, change its logging target to another file.
+
+There are two important subcomponents that interact with RollingFileAppender.
+RollingPolicy - responsible for undertaking the actions required for a rollover.
+TriggeringPolicy - will determine if and exactly when rollover occurs.
+
+To be of any use, a RollingFileAppender must have both a RollingPolicy and a TriggeringPolicy set up.
+
+Property Name	Type	Description
+file - String - See FileAppender properties. Note that file can be null in which case the output is written only to the target specified by the RollingPolicy.
+append - boolean - See FileAppender properties.
+encoder	- Encoder - See OutputStreamAppender properties.
+rollingPolicy - RollingPolicy - This option is the component that will dictate RollingFileAppender's behavior when rollover occurs. See more information below.
+triggeringPolicy - TriggeringPolicy - This option is the component that will tell RollingFileAppender when to activate the rollover procedure. See more information below.
+
+RollingPolicy is responsible for the rollover procedure which involves file moving and renaming.
+
+The RollingPolicy interface is presented below:
+
+package ch.qos.logback.core.rolling;
+
+import ch.qos.logback.core.FileAppender;
+import ch.qos.logback.core.spi.LifeCycle;
+
+public interface RollingPolicy extends LifeCycle {
+
+  public void rollover() throws RolloverFailure;
+  public String getActiveFileName();
+  public CompressionMode getCompressionMode();
+  public void setParent(FileAppender appender);
+}
+The rollover method accomplishes the work involved in archiving the current log file. 
+The getActiveFileName() method is called to compute the file name of the current log file (where live logs are written to).
+As indicated by getCompressionMode method a RollingPolicy is also responsible for determining the compression mode. 
+Lastly, a RollingPolicy is given a reference to its parent via the setParent method.
+
+	TimeBasedRollingPolicy
+
+TimeBasedRollingPolicy is possibly the most popular rolling policy. It defines a rollover policy based on time, for example by day or by month.
+Indeed, TimeBasedTriggeringPolicy implements both RollingPolicy and TriggeringPolicy interfaces.
+
+Property Name	Type	Description
+	fileNamePattern	- String
+The mandatory fileNamePattern property defines the name of the rolled-over (archived) log files. Its value should consist of the name of the file, plus a suitably placed %d conversion specifier. The %d conversion specifier may contain a date-and-time pattern as specified by the java.text.SimpleDateFormat class. If the date-and-time pattern is omitted, then the default pattern yyyy-MM-dd is assumed. The rollover period is inferred from the value of fileNamePattern.
+Note that the file property in RollingFileAppender (the parent of TimeBasedRollingPolicy) can be either set to a value or omitted (=null). By setting the file property of the containing FileAppender, you can decouple the location of the active log file and the location of the archived log files. The current logs will always be targeted at the file specified by the file property. It follows that the name of the currently active log file will not change over time.
+
+However, if you choose to omit the file property, then the active file will be computed anew for each period based on the value of fileNamePattern. In this configuration no roll over occur, unless file compression is specified. The examples below should clarify this point.
+
+The date-and-time pattern, as found within the accolades of %d{} follow java.text.SimpleDateFormat conventions. The forward slash '/' or backward slash '\' characters anywhere within the fileNamePattern property or within the date-and-time pattern will be interpreted as directory separators.
+
+Multiple %d specifiers
+It is possible to specify multiple %d specifiers but only one of which can be primary, i.e. used to infer the rollover period. All other tokens must be marked as auxiliary by passing the 'aux' parameter (see examples below).
+
+Multiple %d specifiers allow you to organize archive files in a folder structure different than that of the roll-over period. For example, the file name pattern shown below organizes log folders by year and month but roll-over log files every day at midnight.
+
+/var/log/%d{yyyy/MM, aux}/myapplication.%d{yyyy-MM-dd}.log
+TimeZone
+Under certain circumstances, you might wish to roll-over log files according to a clock in a timezone different than that of the host. It is possible to pass a timezone argument following the date-and-time pattern within the %d conversion specifier. For example:
+
+aFolder/test.%d{yyyy-MM-dd-HH, UTC}.log
+If the specified timezone identifier is unknown or misspelled, the GMT timezone is assumed as dictated by the TimeZone.getTimeZone(String) method specification.
+
+	maxHistory	int	
+The optional maxHistory property controls the maximum number of archive files to keep, asynchronously deleting older files. For example, if you specify monthly rollover, and set maxHistory to 6, then 6 months worth of archives files will be kept with files older than 6 months deleted. Note as old archived log files are removed, any folders which were created for the purpose of log file archiving will be removed as appropriate.
+
+Setting maxHistory to zero disables archive removal. By default, maxHistory is set to zero, i.e. by default there is no archive removal.
+
+	totalSizeCap	int	
+The optional totalSizeCap property controls the total size of all archive files. Oldest archives are deleted asynchronously when the total size cap is exceeded. The totalSizeCap property requires maxHistory property to be set as well. Moreover, the "max history" restriction is always applied first and the "total size cap" restriction applied second.
+
+The totalSizeCap property can be specified in units of bytes, kilobytes, megabytes or gigabytes by suffixing a numeric value with KB, MB and respectively GB. For example, 5000000, 5000KB, 5MB and 2GB are all valid values, with the first three being equivalent. A numerical value with no suffix is taken to be in units of bytes.
+
+By default, totalSizeCap is set to zero, meaning that there is no total size cap.
+
+	cleanHistoryOnStart	boolean	
+If set to true, archive removal will be executed on appender start up. By default this property is set to false.
+
+Archive removal is normally performed during roll over. However, some applications may not live long enough for roll over to be triggered. It follows that for such short-lived applications archive removal may never get a chance to execute. By setting cleanHistoryOnStart to true, archive removal is performed at appender start up.
+
+Here are a few fileNamePattern values with an explanation of their effects.
+
+	fileNamePattern	Rollover schedule	Example
+
+/wombat/foo.%d
+	Daily rollover (at midnight). Due to the omission of the optional time and date pattern for the %d token specifier, the default pattern of yyyy-MM-dd is assumed, which corresponds to daily rollover.	
+	
+	file property not set: During November 23rd, 2006, logging output will go to the file /wombat/foo.2006-11-23. At midnight and for the rest of the 24th, logging output will be directed to /wombat/foo.2006-11-24.
+
+	file property set to /wombat/foo.txt: During November 23rd, 2006, logging output will go to the file /wombat/foo.txt. At midnight, foo.txt will be renamed as /wombat/foo.2006-11-23. A new /wombat/foo.txt file will be created and for the rest of November 24th logging output will be directed to foo.txt.
+
+/wombat/%d{yyyy/MM}/foo.txt
+	Rollover at the beginning of each month.	
+
+	file property not set: During the month of October 2006, logging output will go to /wombat/2006/10/foo.txt. After midnight of October 31st and for the rest of November, logging output will be directed to /wombat/2006/11/foo.txt.
+
+	file property set to /wombat/foo.txt: The active log file will always be /wombat/foo.txt. During the month of October 2006, logging output will go to /wombat/foo.txt. At midnight of October 31st, /wombat/foo.txt will be renamed as /wombat/2006/10/foo.txt. A new /wombat/foo.txt file will be created where logging output will go for the rest of November. At midnight of November 30th, /wombat/foo.txt will be renamed as /wombat/2006/11/foo.txt and so on.
+
+/wombat/foo.%d{yyyy-ww}.log	
+	Rollover at the first day of each week.
+	
+	Note that the first day of the week depends on the locale.	Similar to previous cases, except that rollover will occur at the beginning of every new week.
+	
+/wombat/foo%d{yyyy-MM-dd_HH}.log
+	Rollover at the top of each hour.	
+	
+/wombat/foo%d{yyyy-MM-dd_HH-mm}.log
+	Rollover at the beginning of every minute.
+	
+/wombat/foo%d{yyyy-MM-dd_HH-mm, UTC}.log
+	Rollover at the beginning of every minute.
+	
+/foo/%d{yyyy-MM,aux}/%d.log	
+	Rollover daily. Archives located under a folder containing year and month.	
+	In this example, the first %d token is marked as auxiliary. The second %d token, with time and date pattern omitted, is then assumed to be primary. Thus, rollover will occur daily (default for %d) and the folder name will depend on the year and month. For example, during the month of November 2006, archived files will all placed under the /foo/2006-11/ folder, e.g /foo/2006-11/2006-11-14.log.
+	
+Any forward or backward slash characters are interpreted as folder (directory) separators. Any required folder will be created as necessary. You can thus easily place your log files in separate folders.
+
+Automatic file compression
+TimeBasedRollingPolicy supports automatic file compression. This feature is enabled if the value of the fileNamePattern option ends with .gz or .zip.
+
+fileNamePattern	Rollover schedule	Example
+/wombat/foo.%d.gz	Daily rollover (at midnight) with automatic GZIP compression of the archived files.	
+file property not set: During November 23rd, 2009, logging output will go to the file /wombat/foo.2009-11-23. However, at midnight that file will be compressed to become /wombat/foo.2009-11-23.gz. For the 24th of November, logging output will be directed to /wombat/folder/foo.​2009-11-24 until it's rolled over at the beginning of the next day.
+
+file property set to /wombat/foo.txt: During November 23rd, 2009, logging output will go to the file /wombat/foo.txt. At midnight that file will be compressed and renamed as /wombat/foo.2009-11-23.gz. A new /wombat/foo.txt file will be created where logging output will go for the rest of November 24th. At midnight November 24th, /wombat/foo.txt will be compressed and renamed as /wombat/foo.2009-11-24.gz and so on.
+
+Size and time based rolling policy
+Sometimes you may wish to archive files essentially by date but at the same time limit the size of each log file, in particular if post-processing tools impose size limits on the log files. In order to address this requirement, logback ships with SizeAndTimeBasedRollingPolicy.
+
+Note the "%i" conversion token in addition to "%d". Both the %i and %d tokens are mandatory. Each time the current log file reaches maxFileSize before the current time period ends, it will be archived with an increasing index, starting at 0.
+
+remaining tasks
+additivity demo
+doAppend logic
+prudent mode
