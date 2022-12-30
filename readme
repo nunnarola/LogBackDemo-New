@@ -262,7 +262,37 @@ Sometimes you may wish to archive files essentially by date but at the same time
 
 Note the "%i" conversion token in addition to "%d". Both the %i and %d tokens are mandatory. Each time the current log file reaches maxFileSize before the current time period ends, it will be archived with an increasing index, starting at 0.
 
+	Encoder interface
+Encoders are responsible for transforming an incoming event into a byte array and writing out the resulting byte array onto the appropriate OutputStream. Thus, encoders have total control of what and when bytes get written to the OutputStream maintained by the owning appender.
+
+Encoders were introduced in logback version 0.9.19. In previous versions, most appenders relied on a layout to transform an event into a string and write it out using a java.io.Writer.
+
+layout has no control over when events get written out, layouts cannot aggregate events into batches. Contrast this with encoders which not only have total control over the format of the bytes written out, but also control when (and if) those bytes get written out.
+
+	LayoutWrappingEncoder
+Until logback version 0.9.19, many appenders relied on the Layout instances to control the format of log output. As there exists substantial amount of code based on the layout interface, we needed a way for encoders to interoperate with layouts. LayoutWrappingEncoder bridges the gap between encoders and layouts. It implements the encoder interface and wraps a layout to which it delegates the work of transforming an event into string.
+
+The doEncode() method starts by having the wrapped layout convert the incoming event into string. The resulting text string is converted to bytes according to the charset encoding chosen by the user.
+
+PatternLayoutEncoder
+Given that PatternLayout is the most commonly used layout, logback caters for this common use-case with PatternLayoutEncoder, an extension of LayoutWrappingEncoder restricted to wrapping instances of PatternLayout.
+
+PatternLayout
+
+As all layouts, PatternLayout takes a logging event and returns a String. However, this String can be customized by tweaking PatternLayout's conversion pattern.
+
+FileAppender and subclasses expect an encoder.
+ logback ships with an encoder named PatternLayoutEncoder, designed solely for the purpose of wrapping a PatternLayout instance so that it can be seen as encoder.
+
 remaining tasks
 additivity demo
 doAppend logic
 prudent mode
+profile based logging
+Conditional logging
+
+Sout vs logging- https://www.baeldung.com/java-system-out-println-vs-loggers#:~:text=With%20the%20use%20of%20Loggers,timestamp%2C%20method%20name%2C%20etc.
+
+user manual- https://www.slf4j.org/manual.html
+
+https://stackify.com/logging-logback/
