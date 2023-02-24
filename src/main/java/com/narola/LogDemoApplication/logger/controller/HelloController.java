@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 public class HelloController extends BaseController{
     private static Logger logger1 = LoggerFactory.getLogger(BaseController.class);
-    private static Logger logger2 = LoggerFactory.getLogger(HelloController.class);
+//    private static Logger logger2 = LoggerFactory.getLogger("com.narola.LogDemoApplication.logger.controller.BaseController.HelloController");
 
     @GetMapping("/hello")
     public ResponseEntity<String> hello() {
@@ -21,11 +21,11 @@ public class HelloController extends BaseController{
         logger1.warn("Warn Message!");
         logger1.error("Error Message!");
 
-        logger2.trace("Trace Message!");
-        logger2.debug("Debug Message!");
-        logger2.info("Info Message!");
-        logger2.warn("Warn Message!");
-        logger2.error("Error Message!");
+//        logger2.trace("Trace Message!");
+//        logger2.debug("Debug Message!");
+//        logger2.info("Info Message!");
+//        logger2.warn("Warn Message!");
+//        logger2.error("Error Message!");
 
         return ResponseEntity.ok().body(data);
     }
